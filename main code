@@ -1,12 +1,18 @@
 import tkinter
 from tkinter import ttk
 from tkinter import messagebox
-# from tkcalendar import Calendar
+from tkinter import*
+from tkcalendar import *
 import calendar
 import csv
 import matplotlib.pyplot as plt
+
+
 class Appointment():
     def __init__(self):
+        self.cleanup()
+
+    def cleanup(self):
         self.phone = ''
         self.name = ''
         self.date = ''
@@ -19,10 +25,47 @@ class Appointment():
         self.facial_price = 0
         self.massage_type = ''
         self.massage_price = 0
-        self.discount = 0
+        self.is_regular_customer = False
+        self.additional_discount = 0
         self.total_price = 0
 
+    def set_haircut_type(self, type):
+        self.haircut_type = type
 
+    def set_haircut_price(self, price):
+        self.haircut_price = price
+        self.calculate_total()
+
+    def set_manicure_type(self, type):
+        self.manicure_type = type
+
+    def set_manicure_price(self, price):
+        self.manicure_price = price
+        self.calculate_total()
+
+    def set_facial_type(self, type):
+        self.facial_type = type
+
+    def set_facial_price(self, price):
+        self.facial_price = price
+        self.calculate_total()
+
+    def set_massage_type(self, type):
+        self.massage_type = type
+
+    def set_massage_price(self, price):
+        self.massage_price = price
+        self.calculate_total()
+
+    def set_is_regular_customer(self, is_regular):
+        self.is_regular_customer = is_regular
+        self.calculate_total()
+
+    def set_additional_discount(self, discount):
+        self.additional_discount = discount
+        self.calculate_total()
+
+    ### TODO: delete me
     def set_haircut(self, type, price):
         self.haircut_type = type
         self.haircut_price = price
@@ -38,19 +81,31 @@ class Appointment():
     def set_massage(self, type, price):
         self.massage_type = type
         self.massage_price = price
+    ###
 
     def calculate_total(self):
         total = (self.haircut_price +
                  self.manicure_price +
                  self.facial_price +
                  self.massage_price)
-        discounted_total = total * (1 - 5)
-        self.total_price = discounted_total
 
-dataFileName = 'Appointments.csv'
+        if self.is_regular_customer:
+            factor = 0.05
+            total *= (1 - factor)
+
+        if self.additional_discount > 0:
+            factor = self.additional_discount / 100
+            total *= (1 - factor)
+
+        self.total_price = total
+        return total
+
+
+DATA_FILE_NAME = 'Appointments.csv'
+current_appointment = Appointment()
 
 def save_appointment(appointment):
-    with open(dataFileName, 'a') as dataFile:
+    with open(DATA_FILE_NAME, 'a') as dataFile:
         writer_csv = csv.writer(dataFile)
         writer_csv.writerow([
             appointment.phone,
@@ -65,9 +120,11 @@ def save_appointment(appointment):
             appointment.facial_price,
             appointment.massage_type,
             appointment.massage_price,
-            appointment.discount,
+            appointment.is_regular_customer,
+            appointment.additional_discount,
             appointment.total_price
         ])
+
 
 def get_appointment():
     appointment = Appointment()
@@ -86,19 +143,125 @@ def get_appointment():
     appointment.discount = userDiscountCombo.get()
     return appointment
 
+
 def save_button():
-    appointment = get_appointment()
-    save_appointment(appointment)
     if userNameTxt == '' or userTelephoneTxt == '' or userDateAppointmentTxt == '':
         tkinter.messagebox.showwarning(title='Error', message='Please, fill customer information')
-    else:
-        print('Appointment is saved')
+        return
 
-def check_button():
-    pass
+    save_appointment(current_appointment)
+    current_appointment.cleanup()
+    print('Appointment is saved')
 
-def regular():
+
+def onPrintCheckClicked():
+    appointment = get_appointment()
+    userName = userNameTxt.get()
+    visit_date = userDateAppointmentTxt.get()
+
+    print('Thank you for visiting Beauty Salon,',userName, '!'
+          'Date of your visit: ', visit_date,"**********************"
+          'Services that were provided: ',
+
+          )
+
     pass
+def configureWidgetState(widget, state):
+    widget.configure(state= 'enabled' if state else 'disabled')
+
+def onUserNameChange(var, index, mode):
+    global userNameVar
+    global current_appointment
+    current_appointment.name = userNameVar.get()
+
+def onTelephoneChange(var, index, mode):
+    global userTelephoneVar
+    global current_appointment
+    current_appointment.phone = userTelephoneVar.get()
+
+def onServiceHaircutCheckChange():
+    val = serviceHaircutCheckValue.get()
+    configureWidgetState(serviceHairTypeCombo, val)
+    configureWidgetState(serviceHairPriceCombo, val)
+
+def onServiceHaircutTypeChange(event):
+    global current_appointment
+    global userTotalPriceAmount
+    value = serviceHairTypeCombo.get()
+    current_appointment.set_haircut_type(value)
+
+def onServiceHaircutPriceChange(event):
+    global current_appointment
+    value = serviceHairPriceCombo.get()
+    current_appointment.set_haircut_price(float(value))
+    userTotalPriceAmount.config(text = str(current_appointment.total_price))
+
+
+def onServiceManicureCheckChange():
+    val = serviceManicureCheckValue.get()
+    configureWidgetState(serviceManicureTypeCombo, val)
+    configureWidgetState(serviceManicurePriceCombo, val)
+
+def onServiceManicureTypeChange(event):
+    global current_appointment
+    global userTotalPriceAmount
+    value = serviceManicureTypeCombo.get()
+    current_appointment.set_manicure_type(value)
+
+def onServiceManicurePriceChange(event):
+    global current_appointment
+    global userTotalPriceAmount
+    value = serviceManicurePriceCombo.get()
+    current_appointment.set_manicure_price(float(value))
+    userTotalPriceAmount.config(text = str(current_appointment.total_price))
+
+def onServiceFacialCheckChange():
+    val = serviceFacialCheckValue.get()
+    configureWidgetState(serviceFacialTypeCombo, val)
+    configureWidgetState(serviceFacialPriceCombo, val)
+
+def onServiceFacialTypeChange(event):
+    global current_appointment
+    global userTotalPriceAmount
+    value = serviceFacialTypeCombo.get()
+    current_appointment.set_facial_type(value)
+
+def onServiceFacialPriceChange(event):
+    global current_appointment
+    global userTotalPriceAmount
+    value = serviceFacialPriceCombo.get()
+    current_appointment.set_facial_price(float(value))
+    userTotalPriceAmount.config(text = str(current_appointment.total_price))
+def onServiceMassageCheckChange():
+    val = serviceMassageCheckValue.get()
+    configureWidgetState(serviceMassageTypeCombo, val)
+    configureWidgetState(serviceMassagePriceCombo, val)
+
+def onServiceMassageTypeChange(event):
+    global current_appointment
+    global userTotalPriceAmount
+    value = serviceMassageTypeCombo.get()
+    current_appointment.set_massage_type(value)
+
+def onServiceMassagePriceChange(event):
+    global current_appointment
+    global userTotalPriceAmount
+    value = serviceMassagePriceCombo.get()
+    current_appointment.set_massage_price(float(value))
+    userTotalPriceAmount.config(text = str(current_appointment.total_price))
+def onRegularCustomerCheckChange():
+    global current_appointment
+    val = userRegularValue.get()
+    current_appointment.set_is_regular_customer(val)
+    userTotalPriceAmount.config(text=str(current_appointment.total_price))
+
+def onServiceAdditionalDiscountChange(event):
+    global current_appointment
+    global userDiscountCombo
+    value = float(userDiscountCombo.get())
+    current_appointment.set_additional_discount(value)
+    userTotalPriceAmount.config(text=str(current_appointment.total_price))
+
 
 window = tkinter.Tk()
 window.title('BEAUTY SALON')
@@ -106,131 +269,188 @@ window.title('BEAUTY SALON')
 frame = tkinter.Frame(window)
 frame.pack()
 
-openFrameworks = tkinter.LabelFrame(frame, highlightcolor='green', text='Customer details')
+# State variables
+serviceMassageCheckValue = tkinter.BooleanVar()
+serviceHaircutCheckValue = tkinter.BooleanVar()
+serviceFacialCheckValue = tkinter.BooleanVar()
+serviceManicureCheckValue = tkinter.BooleanVar()
+userRegularValue = tkinter.BooleanVar()
+
+
+openFrameworks = tkinter.LabelFrame(frame, highlightcolor='green', background= 'pink', text='Customer details')
 openFrameworks.grid(row=0, column=0)
 
 userNameLabel = tkinter.Label(openFrameworks, text='Customer')
-userNameLabel.grid(row=1, column=0)
+userNameLabel.grid(row=1, column=0, pady=15)
 
-userNameTxt = tkinter.Entry(openFrameworks)
-userNameTxt.grid(row= 1, column= 1)
+userNameVar = StringVar()
+userNameVar.trace_add('write', onUserNameChange)
+userNameTxt = tkinter.Entry(openFrameworks, textvariable=userNameVar)
+userNameTxt.grid(row=1, column=1, pady=15)
 
 userTelephoneLabel = tkinter.Label(openFrameworks, text='Telephone No: ')
-userTelephoneLabel.grid(row=1, column=2)
+userTelephoneLabel.grid(row=1, column=2, pady=15)
 
-userTelephoneTxt = tkinter.Entry(openFrameworks)
-userTelephoneTxt.grid(row= 1, column= 3)
+userTelephoneVar = StringVar()
+userTelephoneVar.trace_add('write', onTelephoneChange)
+userTelephoneTxt = tkinter.Entry(openFrameworks, textvariable=userTelephoneVar)
+userTelephoneTxt.grid(row=1, column=3, pady=15)
 
-userDateAppointmentLabel = tkinter.Label(openFrameworks, text='Date of appointment: ')
-userDateAppointmentLabel.grid(row=2, column=0)
+userDateAppointmentLabel = tkinter.Label(openFrameworks, text='Appointment: ')
+userDateAppointmentLabel.grid(row=2, column=0, pady=15)
 
-userDateAppointmentTxt = tkinter.Spinbox(openFrameworks)
-userDateAppointmentTxt.grid(row= 2, column= 1)
+userDateAppointmentTxt = tkinter.Entry(openFrameworks)
+userDateAppointmentTxt.grid(row=2, column=1, pady=15)
+userDateAppointmentTxt.insert(0, 'mm/dd/yyyy')
 
-userRemiderLabel = tkinter.Label(openFrameworks, text = 'Remind: ')
-userRemiderLabel.grid(row = 2, column = 2)
+userRemiderLabel = tkinter.Label(openFrameworks, text='Remind: ')
+userRemiderLabel.grid(row=2, column=2, pady=15)
 
-userRemindercombo= ttk.Combobox(openFrameworks, values = ['Yes', 'No'])
-userRemindercombo.grid(row = 2, column = 3)
+userRemindercombo = ttk.Combobox(openFrameworks, values=['Yes', 'No'])
+userRemindercombo.grid(row=2, column=3, pady=15, padx=10)
 
-
-openSecondFrameworks = tkinter.LabelFrame(frame, fg ='red', text='Services: ')
+openSecondFrameworks = tkinter.LabelFrame(frame, fg='red', background= 'pink', text='Services: ')
 openSecondFrameworks.grid(row=1, column=0)
 
-serviceHaircutLabel = tkinter.Label(openSecondFrameworks, text = 'Haircut')
-serviceHaircutLabel.grid(row = 0, column = 0)
+# Haircut section
+serviceHaircutCheck = ttk.Checkbutton(
+    openSecondFrameworks,
+    variable=serviceHaircutCheckValue,
+    command=onServiceHaircutCheckChange,
+    text='Haircut')
+serviceHaircutCheck.grid(row=0, column=0, padx=(10, 0), pady=15)
 
-serviceHaircutCombo = ttk.Checkbutton(openSecondFrameworks, command= regular)
-serviceHaircutCombo.grid(row = 0, column = 1)
+serviceHairTypeLabel = tkinter.Label(openSecondFrameworks, text='Type: ')
+serviceHairTypeLabel.grid(row=0, column=1, pady=15)
 
-serviceHairTypeLabel = tkinter.Label(openSecondFrameworks, text = 'Type: ')
-serviceHairTypeLabel.grid(row = 1, column = 0)
+# state='readonly'
+serviceHairTypeCombo = ttk.Combobox(
+    openSecondFrameworks,
+    values=['Long', 'Middle', 'Short'],
+    state='disabled')
+serviceHairTypeCombo.bind("<<ComboboxSelected>>", onServiceHaircutTypeChange)
+serviceHairTypeCombo.grid(row=0, column=2, pady=15)
 
-serviceHairTypeCombo= ttk.Combobox(openSecondFrameworks, values = ['Long', 'Middle', 'Short'])
-serviceHairTypeCombo.grid(row = 1, column = 1)
+serviceHairPriceLabel = tkinter.Label(openSecondFrameworks, text='Price: ')
+serviceHairPriceLabel.grid(row=0, column=3, pady=15)
 
-serviceHairPriceLabel = tkinter.Label(openSecondFrameworks, text = 'Price: ')
-serviceHairPriceLabel.grid(row = 1, column = 2)
+serviceHairPriceCombo = ttk.Combobox(
+    openSecondFrameworks,
+    values=[45.00, 35.00, 30.00],
+    state='disabled')
+serviceHairPriceCombo.bind("<<ComboboxSelected>>", onServiceHaircutPriceChange)
+serviceHairPriceCombo.grid(row=0, column=4, pady=15, padx=10)
 
-serviceHairPriceCombo= ttk.Combobox(openSecondFrameworks, values = [45.00, 35.00, 30.00])
-serviceHairTypeCombo.grid(row = 1, column = 3)
+# Manicure section
+serviceManicureCheck = ttk.Checkbutton(
+    openSecondFrameworks,
+    variable=serviceManicureCheckValue,
+    command=onServiceManicureCheckChange,
+    text='Manicure')
+serviceManicureCheck.grid(row=1, column=0, padx=(10, 0), pady=15)
 
-serviceManicureLabel = tkinter.Label(openSecondFrameworks, text = 'Manicure')
-serviceManicureLabel.grid(row = 2, column = 0)
+serviceManicureTypeLabel = tkinter.Label(openSecondFrameworks, text='Type: ')
+serviceManicureTypeLabel.grid(row=1, column=1)
 
-serviceManicureCombo = ttk.Checkbutton(openSecondFrameworks, command = regular)
-serviceManicureCombo.grid(row = 2, column = 1)
+serviceManicureTypeCombo = ttk.Combobox(
+    openSecondFrameworks,
+    values=['French', 'Classic', 'Gel', 'Basic', 'Gel/Decor'],
+    state='disabled')
+serviceManicureTypeCombo.bind("<<ComboboxSelected>>", onServiceManicureTypeChange)
+serviceManicureTypeCombo.grid(row=1, column=2)
 
-serviceManicureTypeLabel = tkinter.Label(openSecondFrameworks, text = 'Type: ')
-serviceManicureTypeLabel.grid(row = 3, column = 0)
+serviceManicurePriceLabel = tkinter.Label(openSecondFrameworks, text='Price: ')
+serviceManicurePriceLabel.grid(row=1, column=3)
 
-serviceManicureTypeCombo= ttk.Combobox(openSecondFrameworks, values = ['French', 'Classic', 'Gel', 'Basic', 'Gel/Decor'])
-serviceManicureTypeCombo.grid(row = 3, column = 1)
+serviceManicurePriceCombo = ttk.Combobox(
+    openSecondFrameworks,
+    values=[45.00, 30.00, 55.00, 25, 85],
+    state='disabled')
+serviceManicurePriceCombo.bind("<<ComboboxSelected>>", onServiceManicurePriceChange)
+serviceManicurePriceCombo.grid(row=1, column=4, pady=15, padx=10)
 
-serviceManicurePriceLabel = tkinter.Label(openSecondFrameworks, text = 'Price: ')
-serviceManicurePriceLabel.grid(row = 3, column = 2)
+# Facial section
+serviceFacialCheck = ttk.Checkbutton(
+    openSecondFrameworks,
+    variable=serviceFacialCheckValue,
+    command=onServiceFacialCheckChange,
+    text='Facial')
+serviceFacialCheck.grid(row=2, column=0, padx=(10, 0), pady=15)
 
-serviceManicurePriceCombo= ttk.Combobox(openSecondFrameworks, values = [45.00, 30.00, 55.00, 25, 85])
-serviceManicurePriceCombo.grid(row = 3, column = 3)
+serviceFacialTypeLabel = tkinter.Label(openSecondFrameworks, text='Type: ')
+serviceFacialTypeLabel.grid(row=2, column=1)
 
-serviceFacialLabel = tkinter.Label(openSecondFrameworks, text = 'Facial')
-serviceFacialLabel.grid(row = 4, column = 0)
+serviceFacialTypeCombo = ttk.Combobox(
+    openSecondFrameworks,
+    values=['Oil skin', 'Anti-age', 'R-lifting', 'Spa day', 'Peeling'],
+    state='disabled')
+serviceFacialTypeCombo.grid(row=2, column=2)
 
-serviceFacialCombo = ttk.Checkbutton(openSecondFrameworks, command = regular)
-serviceFacialCombo.grid(row = 4, column = 1)
+serviceFacialPriceLabel = tkinter.Label(openSecondFrameworks, text='Price: ')
+serviceFacialPriceLabel.grid(row=2, column=3)
 
-serviceFacialTypeLabel = tkinter.Label(openSecondFrameworks, text = 'Type: ')
-serviceFacialTypeLabel.grid(row = 5, column = 0)
+serviceFacialPriceCombo = ttk.Combobox(
+    openSecondFrameworks,
+    values=[125.00, 150.00, 148.00, 225.00, 85.00],
+    state='disabled')
+serviceFacialPriceCombo.grid(row=2, column=4, pady=15, padx=10)
 
-serviceFacialTypeCombo= ttk.Combobox(openSecondFrameworks, values = ['Oil skin', 'Anti-age', 'R-lifting', 'Spa day', 'Peeling'])
-serviceFacialTypeCombo.grid(row = 5, column = 1)
+# Massage section
+serviceMassageCheck = ttk.Checkbutton(
+    openSecondFrameworks,
+    variable=serviceMassageCheckValue,
+    command=onServiceMassageCheckChange,
+    text='Massage')
+serviceMassageCheck.grid(row=3, column=0, padx=(10, 0), pady=15)
 
-serviceFacialPriceLabel = tkinter.Label(openSecondFrameworks, text = 'Price: ')
-serviceFacialPriceLabel.grid(row = 5, column = 2)
+serviceMassageTypeLabel = tkinter.Label(openSecondFrameworks, text='Type: ')
+serviceMassageTypeLabel.grid(row=3, column=1)
 
-serviceFacialPriceCombo= ttk.Combobox(openSecondFrameworks, values = [125.00, 150.00, 148.00, 225.00, 85.00])
-serviceFacialPriceCombo.grid(row = 5, column = 3)
+serviceMassageTypeCombo = ttk.Combobox(
+    openSecondFrameworks,
+    values=['Full body', 'Thai', 'Hot stones', 'Chinese', 'Spa with body wrap'],
+    state='disabled')
+serviceMassageTypeCombo.grid(row=3, column=2)
 
-serviceMassageLabel = tkinter.Label(openSecondFrameworks, text = 'Massage')
-serviceFacialLabel.grid(row = 6, column = 0)
+serviceMassagePriceLabel = tkinter.Label(openSecondFrameworks, text='Price: ')
+serviceMassagePriceLabel.grid(row=3, column=3)
 
-serviceMassageCombo = ttk.Checkbutton(openSecondFrameworks, command = regular)
-serviceMassageCombo.grid(row = 6, column = 1)
+serviceMassagePriceCombo = ttk.Combobox(
+    openSecondFrameworks,
+    values=[85.00, 50.00, 48.00, 55.00, 85.00],
+    state='disabled')
+serviceMassagePriceCombo.grid(row=3, column=4, padx=(10, 0), pady=15)
 
-serviceMassageTypeLabel = tkinter.Label(openSecondFrameworks, text = 'Type: ')
-serviceMassageTypeLabel.grid(row = 7, column = 0)
 
-serviceMassageTypeCombo= ttk.Combobox(openSecondFrameworks, values = ['Full body', 'Thai', 'Hot stones', 'Chinese', 'Spa with body wrap'])
-serviceMassageTypeCombo.grid(row = 7, column = 1)
 
-serviceMassagePriceLabel = tkinter.Label(openSecondFrameworks, text = 'Price: ')
-serviceMassagePriceLabel.grid(row = 7, column = 2)
+openThirdFrameworks = tkinter.LabelFrame(frame, fg='green', background= 'pink', width= 250,  text='Final info: ')
+openThirdFrameworks.grid(row=2, column=0, padx = 70)
 
-serviceMassagePriceCombo= ttk.Combobox(openSecondFrameworks, values=[85.00, 50.00, 48.00, 55.00, 85.00])
-serviceFacialPriceCombo.grid(row = 7, column = 3)
+userDiscountLabel = tkinter.Label(openThirdFrameworks, text='Additional Discount (%): ')
+userDiscountLabel.grid(row=2, column=0)
 
-openThirdFrameworks = tkinter.LabelFrame(frame, fg ='green', text='Final info: ')
-openThirdFrameworks.grid(row=2, column=0)
+userDiscountCombo = ttk.Combobox(openThirdFrameworks, values=[5, 10, 15])
+userDiscountCombo.bind("<<ComboboxSelected>>", onServiceAdditionalDiscountChange)
+userDiscountCombo.grid(row=2, column=1, pady = 5, padx = (0, 10))
 
-userDiscountLabel = tkinter.Label(openThirdFrameworks, text = 'Discount: ')
-userDiscountLabel.grid(row = 2, column = 0)
+userRegularCheck = ttk.Checkbutton(
+    openThirdFrameworks,
+    variable=userRegularValue,
+    command=onRegularCustomerCheckChange,
+    text='Regular customer')
+userRegularCheck.grid(row=1, column=0, padx=(0, 10), pady=15)
 
-userDiscountCombo= ttk.Combobox(openThirdFrameworks, values = ['5%', '10%', '15%'])
-userDiscountCombo.grid(row = 2, column = 1)
 
-userRegularLabel = tkinter.Label(openThirdFrameworks, text = 'Regular customer')
-userRegularLabel.grid(row = 1, column = 0)
+userTotalPriceLabel = tkinter.Label(openThirdFrameworks, text='Total price: ')
+userTotalPriceLabel.grid(row=3, column=0, pady = 7)
 
-userRegular = ttk.Checkbutton(openThirdFrameworks, command = regular)
-userRegular.grid(row = 1, column = 1)
-
-userTotalPriceLabel = tkinter.Label(openThirdFrameworks, text = 'Total price: ')
-userDiscountLabel.grid(row = 2, column = 0)
+userTotalPriceAmount = tkinter.Label(openThirdFrameworks)
+userTotalPriceAmount.grid(row = 3, column = 1, pady = 7,)
 
 saveButton = tkinter.Button(frame, text='Save', command=save_button)
 saveButton.grid(row=5, column=0)
 
-printCheckButton = tkinter.Button(frame, text='Print check', activebackground='red', command=check_button)
+printCheckButton = tkinter.Button(frame, text='Print check', activebackground='red', command=onPrintCheckClicked)
 printCheckButton.grid(row=6, column=0)
 
 window.mainloop()
