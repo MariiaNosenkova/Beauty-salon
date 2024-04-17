@@ -1,14 +1,20 @@
 import tkinter
 from tkinter import ttk
+from tkinter import Tk, Button, Label
 from tkinter import messagebox
-from tkinter import*
-from tkcalendar import *
+from tkinter import *
+from tkcalendar import Calendar
 import calendar
+from datetime import datetime
 import csv
 import matplotlib.pyplot as plt
+import random
+
 
 
 class Appointment():
+    REGULAR_CUSTOMER_DISCOUNT = 5
+
     def __init__(self):
         self.cleanup()
 
@@ -65,23 +71,6 @@ class Appointment():
         self.additional_discount = discount
         self.calculate_total()
 
-    ### TODO: delete me
-    def set_haircut(self, type, price):
-        self.haircut_type = type
-        self.haircut_price = price
-
-    def set_manicure(self, type, price):
-        self.manicure_type = type
-        self.manicure_price = price
-
-    def set_facial(self, type, price):
-        self.facial_type = type
-        self.facial_price = price
-
-    def set_massage(self, type, price):
-        self.massage_type = type
-        self.massage_price = price
-    ###
 
     def calculate_total(self):
         total = (self.haircut_price +
@@ -90,14 +79,14 @@ class Appointment():
                  self.massage_price)
 
         if self.is_regular_customer:
-            factor = 0.05
+            factor = Appointment.REGULAR_CUSTOMER_DISCOUNT / 100
             total *= (1 - factor)
 
         if self.additional_discount > 0:
             factor = self.additional_discount / 100
             total *= (1 - factor)
 
-        self.total_price = total
+        self.total_price = round(total, 2)
         return total
 
 
@@ -143,29 +132,71 @@ def get_appointment():
     appointment.discount = userDiscountCombo.get()
     return appointment
 
+def is_appointment_valid():
+    if current_appointment.name == "" or current_appointment.phone == "":
+        messagebox.showerror("Error", "Customer Details are required")
+        return False
+
+    if (current_appointment.haircut_type == "" and
+            current_appointment.facial_type == "" and
+            current_appointment.manicure_type == "" and
+            current_appointment.massage_type == ""):
+        messagebox.showerror("Error", "No services are selected")
+        return False
+
+    if (current_appointment.haircut_price == 0 and
+            current_appointment.manicure_price == 0 and
+            current_appointment.facial_price == 0 and
+            current_appointment.massage_price == 0):
+        messagebox.showerror("Error", "No prices are selected")
+        return False
+    return True
 
 def save_button():
-    if userNameTxt == '' or userTelephoneTxt == '' or userDateAppointmentTxt == '':
-        tkinter.messagebox.showwarning(title='Error', message='Please, fill customer information')
+    print('save_button')
+    if not is_appointment_valid():
         return
-
     save_appointment(current_appointment)
     current_appointment.cleanup()
     print('Appointment is saved')
 
 
 def onPrintCheckClicked():
-    appointment = get_appointment()
-    userName = userNameTxt.get()
-    visit_date = userDateAppointmentTxt.get()
+    print('onPrintCheckClicked')
 
-    print('Thank you for visiting Beauty Salon,',userName, '!'
-          'Date of your visit: ', visit_date,"**********************"
-          'Services that were provided: ',
+    global current_appointment
 
-          )
+    if not is_appointment_valid():
+        return
 
-    pass
+    billnumber = random.randint(1000, 9999)
+
+    receipt_text = "\t**Welcome to Beauty Salon**\n\n"
+    receipt_text += f"\tBill Number: {billnumber}\n"
+    receipt_text += f"\tCustomer: {current_appointment.name}\n"
+
+    receipt_text += f"\t=======================================\n"
+    receipt_text += f"\tServices:\n"
+    if (current_appointment.haircut_type != ""):
+        receipt_text += f"\t  Haircut: {current_appointment.haircut_price}\n"
+    if (current_appointment.manicure_type != ""):
+        receipt_text += f"\t Manicure: {current_appointment.manicure_price}\n"
+    if (current_appointment.facial_type != ""):
+        receipt_text += f"\t Facial: {current_appointment.facial_price}\n"
+    if (current_appointment.massage_type != ""):
+        receipt_text += f"\t Massage: {current_appointment.massage_price}\n"
+
+    if current_appointment.is_regular_customer is True or current_appointment.additional_discount != 0:
+        receipt_text += f"\t=======================================\n"
+        if current_appointment.is_regular_customer:
+            receipt_text += f"\tRegular Customer(%): {Appointment.REGULAR_CUSTOMER_DISCOUNT}\n"
+        if current_appointment.additional_discount != 0:
+            receipt_text += f"\t Additional Discount(%): {current_appointment.additional_discount}\n"
+
+    receipt_text += f"\t=======================================\n"
+    receipt_text += f"\tTotal price: {current_appointment.total_price}\n"
+    messagebox.showinfo("Receipt", receipt_text)
+
 def configureWidgetState(widget, state):
     widget.configure(state= 'enabled' if state else 'disabled')
 
@@ -223,12 +254,14 @@ def onServiceFacialCheckChange():
 def onServiceFacialTypeChange(event):
     global current_appointment
     global userTotalPriceAmount
+    print('onServiceFacialTypeChange')
     value = serviceFacialTypeCombo.get()
     current_appointment.set_facial_type(value)
 
 def onServiceFacialPriceChange(event):
     global current_appointment
     global userTotalPriceAmount
+    print('onServiceFacialPriceChange')
     value = serviceFacialPriceCombo.get()
     current_appointment.set_facial_price(float(value))
     userTotalPriceAmount.config(text = str(current_appointment.total_price))
@@ -240,12 +273,14 @@ def onServiceMassageCheckChange():
 def onServiceMassageTypeChange(event):
     global current_appointment
     global userTotalPriceAmount
+    print('onServiceMassageTypeChange')
     value = serviceMassageTypeCombo.get()
     current_appointment.set_massage_type(value)
 
 def onServiceMassagePriceChange(event):
     global current_appointment
     global userTotalPriceAmount
+    print('onServiceMassagePriceChange')
     value = serviceMassagePriceCombo.get()
     current_appointment.set_massage_price(float(value))
     userTotalPriceAmount.config(text = str(current_appointment.total_price))
@@ -384,6 +419,7 @@ serviceFacialTypeCombo = ttk.Combobox(
     openSecondFrameworks,
     values=['Oil skin', 'Anti-age', 'R-lifting', 'Spa day', 'Peeling'],
     state='disabled')
+serviceFacialTypeCombo.bind("<<ComboboxSelected>>", onServiceFacialTypeChange)
 serviceFacialTypeCombo.grid(row=2, column=2)
 
 serviceFacialPriceLabel = tkinter.Label(openSecondFrameworks, text='Price: ')
@@ -393,6 +429,7 @@ serviceFacialPriceCombo = ttk.Combobox(
     openSecondFrameworks,
     values=[125.00, 150.00, 148.00, 225.00, 85.00],
     state='disabled')
+serviceFacialPriceCombo.bind("<<ComboboxSelected>>", onServiceFacialPriceChange)
 serviceFacialPriceCombo.grid(row=2, column=4, pady=15, padx=10)
 
 # Massage section
@@ -410,6 +447,7 @@ serviceMassageTypeCombo = ttk.Combobox(
     openSecondFrameworks,
     values=['Full body', 'Thai', 'Hot stones', 'Chinese', 'Spa with body wrap'],
     state='disabled')
+serviceMassageTypeCombo.bind("<<ComboboxSelected>>", onServiceMassageTypeChange)
 serviceMassageTypeCombo.grid(row=3, column=2)
 
 serviceMassagePriceLabel = tkinter.Label(openSecondFrameworks, text='Price: ')
@@ -419,6 +457,7 @@ serviceMassagePriceCombo = ttk.Combobox(
     openSecondFrameworks,
     values=[85.00, 50.00, 48.00, 55.00, 85.00],
     state='disabled')
+serviceMassagePriceCombo.bind("<<ComboboxSelected>>", onServiceMassagePriceChange)
 serviceMassagePriceCombo.grid(row=3, column=4, padx=(10, 0), pady=15)
 
 
@@ -454,3 +493,4 @@ printCheckButton = tkinter.Button(frame, text='Print check', activebackground='r
 printCheckButton.grid(row=6, column=0)
 
 window.mainloop()
+
