@@ -6,6 +6,7 @@ from tkinter import *
 from tkcalendar import Calendar
 import calendar
 from datetime import datetime
+from tkcalendar import DateEntry
 import csv
 import matplotlib.pyplot as plt
 import random
@@ -91,6 +92,7 @@ class Appointment():
 
 
 DATA_FILE_NAME = 'Appointments.csv'
+MAIN_TITLE = 'BEAUTY SALON'
 current_appointment = Appointment()
 
 def save_appointment(appointment):
@@ -134,31 +136,32 @@ def get_appointment():
 
 def is_appointment_valid():
     if current_appointment.name == "" or current_appointment.phone == "":
-        messagebox.showerror("Error", "Customer Details are required")
+        messagebox.showerror(MAIN_TITLE, "Customer Details are required")
         return False
 
     if (current_appointment.haircut_type == "" and
             current_appointment.facial_type == "" and
             current_appointment.manicure_type == "" and
             current_appointment.massage_type == ""):
-        messagebox.showerror("Error", "No services are selected")
+        messagebox.showerror(MAIN_TITLE, "No services are selected")
         return False
 
     if (current_appointment.haircut_price == 0 and
             current_appointment.manicure_price == 0 and
             current_appointment.facial_price == 0 and
             current_appointment.massage_price == 0):
-        messagebox.showerror("Error", "No prices are selected")
+        messagebox.showerror(MAIN_TITLE, "No prices are selected")
         return False
     return True
 
-def save_button():
-    print('save_button')
+def onSaveButtonClicked():
+    print('onSaveButtonClicked')
     if not is_appointment_valid():
         return
     save_appointment(current_appointment)
-    current_appointment.cleanup()
     print('Appointment is saved')
+    text = "Appointment saved."
+    messagebox.showinfo(MAIN_TITLE, text)
 
 
 def onPrintCheckClicked():
@@ -174,11 +177,11 @@ def onPrintCheckClicked():
     receipt_text = "\t**Welcome to Beauty Salon**\n\n"
     receipt_text += f"\tBill Number: {billnumber}\n"
     receipt_text += f"\tCustomer: {current_appointment.name}\n"
-
+    receipt_text += f"\tDate : {current_appointment.date}\n"
     receipt_text += f"\t=======================================\n"
     receipt_text += f"\tServices:\n"
     if (current_appointment.haircut_type != ""):
-        receipt_text += f"\t  Haircut: {current_appointment.haircut_price}\n"
+        receipt_text += f"\t Haircut: {current_appointment.haircut_price}\n"
     if (current_appointment.manicure_type != ""):
         receipt_text += f"\t Manicure: {current_appointment.manicure_price}\n"
     if (current_appointment.facial_type != ""):
@@ -187,15 +190,18 @@ def onPrintCheckClicked():
         receipt_text += f"\t Massage: {current_appointment.massage_price}\n"
 
     if current_appointment.is_regular_customer is True or current_appointment.additional_discount != 0:
-        receipt_text += f"\t=======================================\n"
+        receipt_text += f"\t==============================\n"
         if current_appointment.is_regular_customer:
             receipt_text += f"\tRegular Customer(%): {Appointment.REGULAR_CUSTOMER_DISCOUNT}\n"
         if current_appointment.additional_discount != 0:
-            receipt_text += f"\t Additional Discount(%): {current_appointment.additional_discount}\n"
+            receipt_text += f"\tAdditional Discount(%): {current_appointment.additional_discount}\n"
 
-    receipt_text += f"\t=======================================\n"
+    receipt_text += f"\t==============================\n"
     receipt_text += f"\tTotal price: {current_appointment.total_price}\n"
-    messagebox.showinfo("Receipt", receipt_text)
+
+    receipt_text += f"\t==============================\n"
+    receipt_text += f"\t**Thank you for using our Beauty Salon!**\n"
+    messagebox.showinfo(MAIN_TITLE, receipt_text)
 
 def configureWidgetState(widget, state):
     widget.configure(state= 'enabled' if state else 'disabled')
@@ -210,6 +216,10 @@ def onTelephoneChange(var, index, mode):
     global current_appointment
     current_appointment.phone = userTelephoneVar.get()
 
+def on_date_change(var, index, mode):
+    global current_appointment
+    global user_date_var
+    current_appointment.date = user_date_var.get()
 def onServiceHaircutCheckChange():
     val = serviceHaircutCheckValue.get()
     configureWidgetState(serviceHairTypeCombo, val)
@@ -331,12 +341,15 @@ userTelephoneVar.trace_add('write', onTelephoneChange)
 userTelephoneTxt = tkinter.Entry(openFrameworks, textvariable=userTelephoneVar)
 userTelephoneTxt.grid(row=1, column=3, pady=15)
 
+
 userDateAppointmentLabel = tkinter.Label(openFrameworks, text='Appointment: ')
 userDateAppointmentLabel.grid(row=2, column=0, pady=15)
-
-userDateAppointmentTxt = tkinter.Entry(openFrameworks)
+user_date_var = StringVar()
+user_date_var.trace_add('write', on_date_change)
+now = datetime.now()
+userDateAppointmentTxt = DateEntry(openFrameworks, selectmode='day', year=now.year, month=now.month, day=now.day,
+                                   textvariable=user_date_var)
 userDateAppointmentTxt.grid(row=2, column=1, pady=15)
-userDateAppointmentTxt.insert(0, 'mm/dd/yyyy')
 
 userRemiderLabel = tkinter.Label(openFrameworks, text='Remind: ')
 userRemiderLabel.grid(row=2, column=2, pady=15)
@@ -486,11 +499,12 @@ userTotalPriceLabel.grid(row=3, column=0, pady = 7)
 userTotalPriceAmount = tkinter.Label(openThirdFrameworks)
 userTotalPriceAmount.grid(row = 3, column = 1, pady = 7,)
 
-saveButton = tkinter.Button(frame, text='Save', command=save_button)
+saveButton = tkinter.Button(frame, text='Save', command=onSaveButtonClicked)
 saveButton.grid(row=5, column=0)
 
 printCheckButton = tkinter.Button(frame, text='Print check', activebackground='red', command=onPrintCheckClicked)
 printCheckButton.grid(row=6, column=0)
 
 window.mainloop()
+
 
